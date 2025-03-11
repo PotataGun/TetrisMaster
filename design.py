@@ -32,7 +32,7 @@ SHAPES = [
 ]
 
 # Initialize fonts
-pygame.font.init()  # Make sure font system is initialized
+pygame.font.init()
 font = pygame.font.SysFont("couriernew", 24)
 small_font = pygame.font.SysFont(None, 30)
 large_font = pygame.font.SysFont("couriernew", 36)

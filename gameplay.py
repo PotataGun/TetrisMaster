@@ -14,13 +14,13 @@ current_bag = []
 
 # Scoring system
 SCORES = {1: 100, 2: 300, 3: 500, 4: 800}
-COMBO_BONUS = [0, 150, 200, 300, 400, 400]  # Progressive combo bonus
-BACK_TO_BACK_BONUS = 1.5  # Multiplier for back-to-back Tetris
-ALL_CLEAR_BONUS = 2000  # Points for clearing the entire board
+COMBO_BONUS = [0, 150, 200, 300, 400, 400]
+BACK_TO_BACK_BONUS = 1.5
+ALL_CLEAR_BONUS = 2000
 
 # High score system
 HIGH_SCORE_FILE = "highscores.json"
-MAX_SCORES = 5  # Number of top scores to keep
+MAX_SCORES = 5
 
 class Block:
     """Tetris block class"""
@@ -29,7 +29,7 @@ class Block:
         self.shape = design.SHAPES[shape_index]
         self.color = design.COLORS[shape_index]
         self.x = design.GRID_WIDTH // 2 - len(self.shape[0]) // 2
-        self.y = 0  # 恢复为 0
+        self.y = 0
 
     def rotate(self, grid):
         """Rotate the block with SRS wall kicks"""
@@ -38,7 +38,7 @@ class Block:
         original_x, original_y = self.x, self.y
 
         # Determine if it's an I piece
-        is_i_piece = self.shape_index == 0  # I 形索引为 0
+        is_i_piece = self.shape_index == 0
         kick_tests = [(-1, 0), (-1, 1), (0, -2), (-1, -2)] if not is_i_piece else [(-2, 0), (1, 0), (-2, -1), (1, 2)]
 
         if is_valid_move(self, grid, new_shape=new_shape):
@@ -52,8 +52,8 @@ class Block:
                 if is_valid_move(self, grid, new_shape=new_shape):
                     self.shape = new_shape
                     return True
-                self.x, self.y = original_x, original_y  # 恢复位置
-            self.shape = original_shape  # 恢复原始形状
+                self.x, self.y = original_x, original_y
+            self.shape = original_shape
             return False
 
     def get_shape(self):
@@ -81,9 +81,8 @@ def is_valid_move(block, grid, dx=0, dy=0, new_shape=None):
         for x, cell in enumerate(row):
             if cell:
                 new_x, new_y = block.x + x + dx, block.y + y + dy
-                # Check for top overflow or collision
                 if (new_x < 0 or new_x >= design.GRID_WIDTH or 
-                    new_y < 0 or new_y >= design.GRID_HEIGHT or  # 明确检测顶部溢出
+                    new_y < 0 or new_y >= design.GRID_HEIGHT or
                     (new_y >= 0 and grid[new_y][new_x] != design.TRANSPARENT)):
                     return False
     return True
@@ -98,11 +97,11 @@ def place_block(block, grid):
 
 def calculate_soft_drop_score(drop_distance):
     """Calculate points for soft drop"""
-    return drop_distance  # 1 point per cell
+    return drop_distance
 
 def calculate_hard_drop_score(current_y, landing_y):
     """Calculate points for hard drop"""
-    return 2 * (landing_y - current_y)  # 2 points per cell
+    return 2 * (landing_y - current_y)
 
 def clear_lines(grid):
     """Clear completed lines and return score"""
@@ -176,20 +175,24 @@ def get_ghost_piece(block, grid):
     return ghost_block
 
 def load_high_scores():
-    """Load high scores from file"""
+    """Load high scores from file with compatibility for old format"""
     if not os.path.exists(HIGH_SCORE_FILE):
         return []
     
     with open(HIGH_SCORE_FILE, "r") as file:
         try:
             data = json.load(file)
+            if not data:
+                return []
+            if all(isinstance(item, (int, float)) for item in data):
+                return [{"score": int(item), "name": "AAA", "date": "2025-03-09"} for item in data]
             return data if isinstance(data, list) else []
         except json.JSONDecodeError:
-            return []  # 如果文件损坏或为空，返回空列表
+            return []
 
 def save_high_scores(high_scores):
     """Save high scores to file"""
-    if not high_scores:  # If no scores, save empty list
+    if not high_scores:
         high_scores = []
     
     try:
@@ -199,15 +202,29 @@ def save_high_scores(high_scores):
     except Exception as e:
         print(f"Error saving high scores: {e}")
 
-def update_high_scores(new_score):
-    """Update high score list"""
+
+def update_high_scores(new_score, player_name=None):
+    """Update high score list with name"""
+    import datetime
     high_scores = load_high_scores()
-    if isinstance(new_score, int):
-        high_scores.append(new_score)
-        high_scores = sorted(high_scores, key=int, reverse=True)[:MAX_SCORES]
+    if not isinstance(new_score, int):
+        return False
+
+    # 如果没有提供名字，暂时不保存
+    if player_name is None or player_name.strip() == "":
+        return True
+
+    if len(high_scores) < MAX_SCORES or new_score > min(high_scores, key=lambda x: x["score"], default={"score": 0})["score"]:
+        entry = {
+            "score": new_score,
+            "name": player_name,
+            "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        }
+        high_scores.append(entry)
+        high_scores = sorted(high_scores, key=lambda x: x["score"], reverse=True)[:MAX_SCORES]
         save_high_scores(high_scores)
-    else:
-        print(f"Warning: Score {new_score} is not an integer (type: {type(new_score)})")
+        return True
+    return False
 
 def reset_game(initial_level=1, keep_lines_cleared=False, current_lines_cleared=0):
     global current_bag
@@ -221,9 +238,12 @@ def reset_game(initial_level=1, keep_lines_cleared=False, current_lines_cleared=
     lines_cleared = current_lines_cleared if keep_lines_cleared else 0
     return current_block, next_blocks, hold_block, hold_used, grid, score, combo_count, lines_cleared, initial_level
 
-def end_game(score):
-    """Handle game over"""
-    update_high_scores(score)
+def end_game(score, player_name=None):
+    """Handle game over with optional player name"""
+    if player_name and player_name.strip():
+        update_high_scores(score, player_name)
+    else:
+        print("No valid player name provided, score not saved.")
 
 def check_for_tspin(block, grid, last_action_was_rotation):
     """检查是否为T-Spin"""
