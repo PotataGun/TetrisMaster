@@ -1,25 +1,10 @@
+'''menu.py - Handling the start menu and game over screen.'''
 import pygame
 import gameplay
-
-# Game Constants
-BLOCK_SIZE = 30
-GRID_WIDTH, GRID_HEIGHT = 10, 20
-SCREEN_HEIGHT = 600
-SCREEN_WIDTH = 200 + GRID_WIDTH * BLOCK_SIZE + 200
-GRID_START_X = 200
-
-# Colors
-WHITE, BLACK = (255, 255, 255), (0, 0, 0)
-BACKGROUND_COLOR = (10, 10, 25)
-BUTTON_COLOR, BUTTON_HOVER_COLOR = (60, 159, 40), (80, 200, 60)
-LEVEL_BUTTON_COLOR, LEVEL_BUTTON_HOVER_COLOR = (100, 100, 100), (130, 130, 130)
-TABLE_COLOR = (0, 0, 0)
+from constants import *
 
 # Initialize fonts
 font = small_font = large_font = screen = None
-
-# Game level settings
-LEVEL_OPTIONS = [1, 5, 10, 15, 20, 25]
 current_level_index = 0
 
 def create_screen():
@@ -64,7 +49,6 @@ def draw_start_menu(screen):
         (138, 43, 226)  # S - Purple
     ]
     
-    # 计算总宽度以便居中显示
     total_width = 0
     letter_surfaces = []
     
@@ -73,11 +57,10 @@ def draw_start_menu(screen):
         letter_surfaces.append(letter_surface)
         total_width += letter_surface.get_width()
     
-    # 起始X坐标（居中）
     current_x = SCREEN_WIDTH // 2 - total_width // 2
     title_y = 100
     
-    # 渲染每个彩色字母
+    # Render each letter with a shadow
     for i, letter_surface in enumerate(letter_surfaces):
         color_letter = title_font.render(letters[i], True, colors[i])
         shadow_letter = title_font.render(letters[i], True, (50, 50, 50))
@@ -85,10 +68,10 @@ def draw_start_menu(screen):
         screen.blit(color_letter, (current_x, title_y))
         current_x += letter_surface.get_width()
 
-    # 获取鼠标位置
+    # Mouse position
     mouse_pos = pygame.mouse.get_pos()
 
-    # Play 按钮
+    # Play Button
     button_width, button_height = 200, 60
     button_x = SCREEN_WIDTH // 2 - button_width // 2
     button_y = 250
@@ -100,7 +83,7 @@ def draw_start_menu(screen):
     screen.blit(play_text, (button_x + button_width // 2 - play_text.get_width() // 2, 
                             button_y + button_height // 2 - play_text.get_height() // 2))
 
-    # Level 按钮
+    # Level Button
     level_button_width, level_button_height = 200, 40
     level_button_x = SCREEN_WIDTH // 2 - level_button_width // 2
     level_button_y = button_y + button_height + 15
@@ -113,14 +96,13 @@ def draw_start_menu(screen):
     screen.blit(level_text, (level_button_x + level_button_width // 2 - level_text.get_width() // 2, 
                             level_button_y + level_button_height // 2 - level_text.get_height() // 2))
 
-    # 高分榜标题
+    # High Scores
     high_score_text = small_font.render("HIGH SCORES", True, WHITE)
     screen.blit(high_score_text, (SCREEN_WIDTH // 2 - high_score_text.get_width() // 2, level_button_y + level_button_height + 30))
 
-    # 加载高分榜
+    # Load high scores file
     high_scores = gameplay.load_high_scores()
     
-    # 确定最大宽度以动态调整列
     max_rank_width = max([small_font.render(f"{i + 1}.", True, WHITE).get_width() for i in range(len(high_scores))] or [small_font.render("5.", True, WHITE).get_width()])
     max_name_width = max([small_font.render(entry["name"], True, WHITE).get_width() for entry in high_scores] or [small_font.render("AAA", True, WHITE).get_width()])
     max_score_width = max([small_font.render(f"{entry['score']:,}", True, WHITE).get_width() for entry in high_scores] or [small_font.render("0,000", True, WHITE).get_width()])
@@ -136,7 +118,7 @@ def draw_start_menu(screen):
     table_height = 30
     table_y = level_button_y + level_button_height + 60
     
-    # 表头
+    # Table header
     header_rect = pygame.Rect(table_x, table_y, table_width, table_height)
     pygame.draw.rect(screen, TABLE_COLOR, header_rect)
     pygame.draw.rect(screen, WHITE, header_rect, 1)
@@ -144,7 +126,7 @@ def draw_start_menu(screen):
     screen.blit(small_font.render("NAME", True, WHITE), (name_x + (NAME_WIDTH - small_font.render("NAME", True, WHITE).get_width()) // 2, table_y + table_height//2 - small_font.get_height()//2))
     screen.blit(small_font.render("SCORE", True, WHITE), (score_x + (SCORE_WIDTH - small_font.render("SCORE", True, WHITE).get_width()) // 2, table_y + table_height//2 - small_font.get_height()//2))
     
-    # 表格行
+    # Table rows
     for i, entry in enumerate(high_scores[:gameplay.MAX_SCORES]):
         row_y = table_y + (i + 1) * table_height
         row_rect = pygame.Rect(table_x, row_y, table_width, table_height)
@@ -213,7 +195,9 @@ def draw_game_over(screen, score, new_high_score, input_active, input_text, flas
         pygame.draw.rect(screen, WHITE, row_rect, 1)
         
         rank_text = small_font.render(f"{i + 1}.", True, WHITE)
-        text_color = get_rainbow_color(current_time) if (new_high_score and entry["score"] == score and not input_active and current_time - flash_start_time < 5000) else WHITE
+        # Only flash the latest high score entry
+        is_new_entry = entry.get("is_new", False)
+        text_color = get_rainbow_color(current_time) if (new_high_score and is_new_entry and not input_active and current_time - flash_start_time < 5000) else WHITE
         name_text = small_font.render(entry["name"], True, text_color)
         score_text = small_font.render(f"{entry['score']:,}", True, text_color)
         
@@ -255,14 +239,14 @@ def draw_game_over(screen, score, new_high_score, input_active, input_text, flas
     return button_rect
 
 def draw_countdown(screen, font, count):
-    """绘制倒计时数字"""
-    screen.fill(BACKGROUND_COLOR)  # 清除整个屏幕以避免重叠
+    """Draw the countdown timer on the screen"""
+    screen.fill(BACKGROUND_COLOR)  # Clear the screen
     text = font.render(str(count), True, WHITE)
     text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
     screen.blit(text, text_rect)
 
 def handle_game_over_input(events, input_text, score):
-    """处理游戏结束时的输入，支持大小写字母，返回更新后的 input_text 和 input_active"""
+    """Game over input handling including high score entry"""
     input_active = True
     for event in events:
         if event.type == pygame.QUIT:

@@ -1,8 +1,9 @@
-# gameplay.py
+'''gameplay.py - Game logic module'''
 import random
 import json
 import os
 import design
+from constants import *
 
 # Animation variables
 score_animation = combo_animation = clear_message = None
@@ -12,15 +13,6 @@ score_timer = combo_timer = 0
 back_to_back = all_clear = False
 current_bag = []
 
-# Scoring system
-SCORES = {1: 100, 2: 300, 3: 500, 4: 800}
-COMBO_BONUS = [0, 150, 200, 300, 400, 400]
-BACK_TO_BACK_BONUS = 1.5
-ALL_CLEAR_BONUS = 2000
-
-# High score system
-HIGH_SCORE_FILE = "highscores.json"
-MAX_SCORES = 5
 
 class Block:
     """Tetris block class"""
@@ -202,7 +194,6 @@ def save_high_scores(high_scores):
     except Exception as e:
         print(f"Error saving high scores: {e}")
 
-
 def update_high_scores(new_score, player_name=None):
     """Update high score list with name"""
     import datetime
@@ -210,15 +201,21 @@ def update_high_scores(new_score, player_name=None):
     if not isinstance(new_score, int):
         return False
 
-    # 如果没有提供名字，暂时不保存
+    # Name must be a non-empty string
     if player_name is None or player_name.strip() == "":
         return True
+
+    # Check is new entry in high scores
+    for entry in high_scores:
+        if "is_new" in entry:
+            entry["is_new"] = False
 
     if len(high_scores) < MAX_SCORES or new_score > min(high_scores, key=lambda x: x["score"], default={"score": 0})["score"]:
         entry = {
             "score": new_score,
             "name": player_name,
-            "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "is_new": True  # Mark latest entry as new
         }
         high_scores.append(entry)
         high_scores = sorted(high_scores, key=lambda x: x["score"], reverse=True)[:MAX_SCORES]
@@ -246,7 +243,7 @@ def end_game(score, player_name=None):
         print("No valid player name provided, score not saved.")
 
 def check_for_tspin(block, grid, last_action_was_rotation):
-    """检查是否为T-Spin"""
+    # Check tspin mechanics
     if block.shape_index != 6 or not last_action_was_rotation:
         return False
     

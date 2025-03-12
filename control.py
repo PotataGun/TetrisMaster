@@ -1,15 +1,12 @@
+'''control.py - Handling user input for Tetronimos'''
 import pygame
 import gameplay
 import design
-
-DAS_DELAY = 380
-ARR_DELAY = 70
-MOVE_REPEAT_DELAY = 15
-LOCK_DELAY = 500
-MAX_LOCK_RESETS = 15
+from constants import *
 
 class GameState:
     def __init__(self, current_level=1):
+        """Represents the state of the Tetris game, including block positions, score, and game status."""
         self.current_block, self.next_blocks, self.hold_block, self.hold_used, self.grid, \
         self.score, self.combo_count, self.lines_cleared, _ = gameplay.reset_game(current_level)
         self.game_over = False
@@ -48,10 +45,10 @@ class GameState:
 
 class InputTimer:
     def __init__(self, das_delay, arr_delay):
-        self.das_delay = das_delay
-        self.arr_delay = arr_delay
-        self.last_time = 0
-        self.is_das_active = False
+        self.das_delay = das_delay # Delayed Auto Shift
+        self.arr_delay = arr_delay # Auto Repeat Rate
+        self.last_time = 0 # Last time the key was pressed
+        self.is_das_active = False # Whether DAS is currently active
 
     def update(self, current_time, key_pressed, initial_press):
         if key_pressed:
@@ -163,6 +160,7 @@ def handle_gravity(state, delta_time):
         state.last_action_was_rotation = False
 
 def try_rotate(state):
+    '''Attempt to rotate the current block, including wall kicks.'''
     original_x, original_y = state.current_block.x, state.current_block.y
     if state.current_block.rotate(state.grid):
         reset_lock_delay(state)

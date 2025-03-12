@@ -1,35 +1,7 @@
-# design.py - Optimized
+'''design.py - Drawing functions for the game.'''
 import pygame
 import gameplay
-
-# Game Constants
-BLOCK_SIZE = 30
-GRID_WIDTH, GRID_HEIGHT = 10, 20
-SCREEN_HEIGHT = 600
-SCREEN_WIDTH = 200 + GRID_WIDTH * BLOCK_SIZE + 200
-GRID_START_X = 200
-
-# Colors
-WHITE, GRAY, BLACK = (255, 255, 255), (128, 128, 128), (0, 0, 0)
-TRANSPARENT = (128, 128, 128, 80)
-BACKGROUND_COLOR = (10, 10, 25)
-BUTTON_COLOR, BUTTON_HOVER_COLOR = (50, 100, 200), (70, 140, 255)
-
-# Tetromino colors and shapes
-COLORS = [
-    (0, 255, 255), (255, 165, 0), (0, 0, 255), (255, 255, 0),
-    (0, 255, 0), (255, 0, 0), (255, 0, 255)
-]
-
-SHAPES = [
-    [[1, 1, 1, 1]],                    # I
-    [[1, 0, 0], [1, 1, 1]],            # L
-    [[0, 0, 1], [1, 1, 1]],            # J
-    [[1, 1], [1, 1]],                  # O
-    [[0, 1, 1], [1, 1, 0]],            # S
-    [[1, 1, 0], [0, 1, 1]],            # Z
-    [[0, 1, 0], [1, 1, 1]]             # T
-]
+from constants import *
 
 # Initialize fonts
 pygame.font.init()
@@ -124,15 +96,15 @@ def draw_score_animation(screen, font, x, y):
     # Display animations
     animations = [
         (gameplay.score_animation, (255, 255, 0), (x + 50, y - 30)),
-        (gameplay.clear_message, (255, 255, 255), (0, 0)),  # 临时占位，稍后计算
+        (gameplay.clear_message, (255, 255, 255), (0, 0)),  
         (gameplay.combo_animation, (255, 50, 50), (SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT // 3 + 40))
     ]
     
     for anim, color, pos in animations:
         if anim and (gameplay.score_timer > 0 or gameplay.combo_timer > 0):
             text = font.render(anim, True, color)
-            if anim == gameplay.clear_message:  # 仅对 clear_message 动态居中
-                pos = (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 3)  # 水平居中
+            if anim == gameplay.clear_message:  #
+                pos = (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 3)  
             screen.blit(text, pos)
     
     # Update timers
